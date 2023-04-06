@@ -46,6 +46,29 @@ void PC_VecCross(T1 &vec1, T2 &vec2, T3 &vec, bool isNormal = true)
 }
 //=========================================================================
 
+//两点距离=================================================================
+template <typename T1, typename T2>
+double PC_PPDist(T1 &pt1, T2 &pt2)
+{
+	float diff_x = pt2.x - pt1.x;
+	float diff_y = pt2.y - pt1.y;
+	float diff_z = pt2.z - pt1.z;
+	return std::sqrt(diff_x * diff_x + diff_y * diff_y + diff_z * diff_z);
+}
+//=========================================================================
+
+//计算两点间的向量=========================================================
+template <typename T1, typename T2>
+void PC_PPVec(T1& pt1, T2& pt2, P_XYZ& normal)
+{
+	float diff_x = pt2.x - pt1.x;
+	float diff_y = pt2.y - pt1.y;
+	float diff_z = pt2.z - pt1.z;
+	float norm_ = 1.0f / std::sqrt(std::max(diff_x * diff_x + diff_y * diff_y + diff_z * diff_z, 1e-8f));
+	normal = { diff_x * norm_, diff_y * norm_,diff_z * norm_ };
+}
+//=========================================================================
+
 //计算点间距===============================================================
 template <typename T1, typename T2>
 double Img_ComputePPDist(T1 &pt1, T2 &pt2)
