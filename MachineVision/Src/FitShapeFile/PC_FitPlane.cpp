@@ -15,6 +15,9 @@ void PC_RANSACFitPlane(NB_Array3D pts, Plane3D& plane, vector<int>& inliners, do
 	vector<Point3d> pts_(3);
 	for (int i = 0; i < maxEpo; ++i)
 	{
+		//防止进入死循环
+		if (i > 500)
+			break;
 		int effetPoints = 0;
 		//随机选择三个点计算平面---注意：这里可能需要特殊处理防止点相同
 		pts_[0] = pts[rand() % size]; pts_[1] = pts[rand() % size];	pts_[2] = pts[rand() % size];
@@ -23,8 +26,7 @@ void PC_RANSACFitPlane(NB_Array3D pts, Plane3D& plane, vector<int>& inliners, do
 		//计算局内点的个数
 		for (int j = 0; j < size; ++j)
 		{
-			double dist = PC_PtToPlaneDist(pts[i], plane_);
-			effetPoints += dist < thres ? 1 : 0;
+			effetPoints += PC_PtToPlaneDist(pts[j], plane_) < thres ? 1 : 0;
 		}
 		//获取最优模型，并根据概率修改迭代次数
 		if (best_model_p < effetPoints)
@@ -34,11 +36,6 @@ void PC_RANSACFitPlane(NB_Array3D pts, Plane3D& plane, vector<int>& inliners, do
 			double t_P = (double)best_model_p / size;
 			double pow_t_p = t_P * t_P * t_P;
 			maxEpo = log_P / log(1 - pow_t_p) + std::sqrt(1 - pow_t_p) / (pow_t_p);
-		}
-		if (best_model_p > 0.5 * size)
-		{
-			plane = plane_;
-			break;
 		}
 	}
 	//提取局内点

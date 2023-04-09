@@ -15,6 +15,8 @@ void PC_RANSACFitSphere(NB_Array3D pts, Sphere3D& sphere, vector<int>& inliners,
 	vector<Point3d> pts_(4);
 	for (int i = 0; i < maxEpo; ++i)
 	{
+		if (i > 500)
+			break;
 		int effetPoints = 0;
 		//随机选择四个点计算球---注意：这里可能需要特殊处理防止点相同
 		pts_[0] = pts[rand() % size]; pts_[1] = pts[rand() % size];
@@ -24,8 +26,7 @@ void PC_RANSACFitSphere(NB_Array3D pts, Sphere3D& sphere, vector<int>& inliners,
 		//计算局内点的个数
 		for (int j = 0; j < size; ++j)
 		{
-			double dist = PC_PtToCircleDist(pts[j], sphere_);
-			effetPoints += dist < thres ? 1 : 0;
+			effetPoints += PC_PtToCircleDist(pts[j], sphere_) < thres ? 1 : 0;
 		}
 		//获取最优模型，并根据概率修改迭代次数
 		if (best_model_p < effetPoints)
@@ -35,11 +36,6 @@ void PC_RANSACFitSphere(NB_Array3D pts, Sphere3D& sphere, vector<int>& inliners,
 			double t_P = (double)best_model_p / size;
 			double pow_t_p = t_P * t_P * t_P;
 			maxEpo = log_P / log(1 - pow_t_p) + std::sqrt(1 - pow_t_p) / (pow_t_p);
-		}
-		if (best_model_p > 0.5 * size)
-		{
-			sphere = sphere_;
-			break;
 		}
 	}
 	//提取局内点

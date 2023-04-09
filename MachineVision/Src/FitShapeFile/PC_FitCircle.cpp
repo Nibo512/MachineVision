@@ -15,6 +15,8 @@ void PC_RANSACFitCircle(NB_Array3D pts, Circle3D& circle, vector<int>& inliners,
 	int maxEpo = 10000;
 	for (int i = 0; i < maxEpo; ++i)
 	{
+		if (i > 500)
+			break;
 		int effetPoints = 0;
 		//随机选择三个点计算园---注意：这里可能需要特殊处理防止点相同
 		int index_1 = rand() % size;
@@ -26,8 +28,7 @@ void PC_RANSACFitCircle(NB_Array3D pts, Circle3D& circle, vector<int>& inliners,
 		//计算局内点的个数
 		for (int j = 0; j < size; ++j)
 		{
-			double dist = PC_PtToCircleDist(pts[j], circle_);
-			effetPoints += dist < thres ? 1 : 0;
+			effetPoints += PC_PtToCircleDist(pts[j], circle_) < thres ? 1 : 0;
 		}
 		//获取最优模型，并根据概率修改迭代次数
 		if (best_model_p < effetPoints)
@@ -38,11 +39,6 @@ void PC_RANSACFitCircle(NB_Array3D pts, Circle3D& circle, vector<int>& inliners,
 			double pow_t_p = t_P * t_P * t_P;
 			maxEpo = log_P / log(1 - pow_t_p) + std::sqrt(1 - pow_t_p) / (pow_t_p);
 		}
-		if (best_model_p > 0.5 * size)
-		{
-			circle = circle_;
-			break;
-		}
 	}
 	//提取局内点
 	if (inliners.size() != 0)
@@ -50,7 +46,6 @@ void PC_RANSACFitCircle(NB_Array3D pts, Circle3D& circle, vector<int>& inliners,
 	inliners.reserve(size);
 	for (int i = 0; i < size; ++i)
 	{
-		double dist = 0.0;
 		if (PC_PtToCircleDist(pts[i], circle) < thres)
 			inliners.push_back(i);
 	}

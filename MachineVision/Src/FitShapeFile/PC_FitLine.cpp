@@ -14,6 +14,8 @@ void PC_RANSACFitLine(NB_Array3D pts, Line3D& line, vector<int>& inliners, doubl
 	int maxEpo = 10000;
 	for (int i = 0; i < maxEpo; ++i)
 	{
+		if (i > 500)
+			break;
 		int effetPoints = 0;
 		//随机选择两个点拟合直线---注意：这里可能需要特殊处理防止点相同
 		Point3d pt1 = pts[rand() % size]; 
@@ -23,8 +25,7 @@ void PC_RANSACFitLine(NB_Array3D pts, Line3D& line, vector<int>& inliners, doubl
 		//计算局内点的个数
 		for (int j = 0; j < size; ++j)
 		{
-			double dist = PC_PtToLineDist(pts[j], line_);
-			effetPoints += dist < thres ? 1 : 0;
+			effetPoints += PC_PtToLineDist(pts[j], line_) < thres ? 1 : 0;
 		}
 		//获取最优模型，并根据概率修改迭代次数
 		if (best_model_p < effetPoints)
@@ -34,11 +35,6 @@ void PC_RANSACFitLine(NB_Array3D pts, Line3D& line, vector<int>& inliners, doubl
 			double t_P = (double)best_model_p / size;
 			double pow_t_p = t_P * t_P;
 			maxEpo = log_P / log(1 - pow_t_p) + std::sqrt(1 - pow_t_p) / (pow_t_p);
-		}
-		if (best_model_p > 0.5 * size)
-		{
-			line = line_;
-			break;
 		}
 	}
 	//提取局内点

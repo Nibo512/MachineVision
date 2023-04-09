@@ -33,31 +33,6 @@ void Img_EllipseNormalization(vector<double>& ellipse_, Ellipse2D& normEllipse)
 }
 //======================================================================================
 
-//点到椭圆的距离--超简单版，不建议采用==================================================
-template <typename T>
-void Img_PtsToEllipseDist(const T& pt, Ellipse2D& ellipse, double& dist)
-{
-	double cosVal = std::cos(-ellipse.angle);
-	double sinVal = std::sin(-ellipse.angle);
-	double x_ = pt.x - ellipse.x;
-	double y_ = pt.y - ellipse.y;
-	double x = cosVal * x_ - sinVal * y_;
-	double y = cosVal * y_ + sinVal * x_;
-	double k = y / x;
-	double a_2 = ellipse.a * ellipse.a;
-	double b_2 = ellipse.b * ellipse.b;
-	double coeff = a_2 * b_2 / (b_2 + a_2 * k * k);
-	double x0 = -std::sqrt(coeff);
-	double y0 = k * x0;
-	double dist1 = std::sqrt(pow(x - x0, 2) + pow(y - y0, 2));
-
-	x0 = std::sqrt(coeff);
-	y0 = k * x0;
-	double dist2 = std::sqrt(pow(x - x0, 2) + pow(y - y0, 2));
-	dist = dist1 < dist2 ? dist1 : dist2;
-}
-//======================================================================================
-
 //随机一致采样算法计算椭圆圆============================================================
 void Img_RANSACFitEllipse(NB_Array2D pts, Ellipse2D& ellipse, vector<int>& inliners, double thres)
 {
@@ -72,6 +47,8 @@ void Img_RANSACFitEllipse(NB_Array2D pts, Ellipse2D& ellipse, vector<int>& inlin
 	vector<double> ellipse_(6);
 	for (int i = 0; i < maxEpo; ++i)
 	{
+		if (i > 500)
+			break;
 		int effetPoints = 0;
 		//随机选择六个个点计算椭圆---注意：这里可能需要特殊处理防止点相同
 		pts_[0] = pts[rand() % size]; pts_[1] = pts[rand() % size];	pts_[2] = pts[rand() % size];
@@ -82,9 +59,7 @@ void Img_RANSACFitEllipse(NB_Array2D pts, Ellipse2D& ellipse, vector<int>& inlin
 		//计算局内点的个数
 		for (int j = 0; j < size; ++j)
 		{ 
-			double dist = 0.0f;
-			Img_PtsToEllipseDist(pts[j], normEllipse, dist);
-			effetPoints += dist < thres ? 1 : 0;
+			effetPoints += Img_PtsToEllipseDist(pts[j], normEllipse) < thres ? 1 : 0;
 		}
 		//获取最优模型，并根据概率修改迭代次数
 		if (best_model_p < effetPoints)
@@ -107,9 +82,7 @@ void Img_RANSACFitEllipse(NB_Array2D pts, Ellipse2D& ellipse, vector<int>& inlin
 	inliners.reserve(size);
 	for (int i = 0; i < size; ++i)
 	{
-		double dist = 0.0f;
-		Img_PtsToEllipseDist(pts[i], ellipse, dist);
-		if (dist < thres)
+		if (Img_PtsToEllipseDist(pts[i], ellipse) < thres)
 			inliners.push_back(i);
 	}
 }
@@ -195,8 +168,7 @@ void Img_HuberEllipseWeights(NB_Array2D pts, Ellipse2D& ellipse, vector<double>&
 	double tao = 1.345;
 	for (int i = 0; i < pts.size(); ++i)
 	{
-		double distance = 0.0;
-		Img_PtsToEllipseDist(pts[i], ellipse, distance);
+		double distance =  Img_PtsToEllipseDist(pts[i], ellipse);
 		if (distance <= tao)
 		{
 			weights[i] = 1;
@@ -215,7 +187,7 @@ void Img_TukeyEllipseWeights(NB_Array2D pts, Ellipse2D& ellipse, vector<double>&
 	vector<double> dists(pts.size());
 	for (int i = 0; i < pts.size(); ++i)
 	{
-		Img_PtsToEllipseDist(pts[i], ellipse, dists[i]);
+		dists[i] = Img_PtsToEllipseDist(pts[i], ellipse);
 	}
 	//求限制条件tao
 	vector<double> disttanceSort = dists;

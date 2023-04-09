@@ -14,6 +14,8 @@ void Img_RANSACFitLine(NB_Array2D pts, Line2D& line, vector<int>& inliners, doub
 	int maxEpo = 10000;
 	for (int i = 0; i < maxEpo; ++i)
 	{
+		if (i > 500)
+			break;
 		int effetPoints = 0;
 		//随机选择两个点计算直线---注意：这里可能需要特殊处理防止点相同
 		int index_1 = rand() % size;
@@ -24,8 +26,7 @@ void Img_RANSACFitLine(NB_Array2D pts, Line2D& line, vector<int>& inliners, doub
 		//计算局内点的个数
 		for (int j = 0; j < size; ++j)
 		{
-			float dist = abs(line_.a * pts[j].x + line_.b * pts[j].y + line_.c);
-			effetPoints += dist < thres ? 1 : 0;
+			effetPoints += abs(line_.a * pts[j].x + line_.b * pts[j].y + line_.c) < thres ? 1 : 0;
 		}
 		//获取最优模型，并根据概率修改迭代次数
 		if (best_model_p < effetPoints)
@@ -35,11 +36,6 @@ void Img_RANSACFitLine(NB_Array2D pts, Line2D& line, vector<int>& inliners, doub
 			double t_P = (double)best_model_p / size;
 			double pow_t_p = t_P * t_P;
 			maxEpo = log_P / log(1 - pow_t_p) + std::sqrt(1 - pow_t_p) / (pow_t_p);
-		}
-		if (best_model_p > 0.5 * size)
-		{
-			line = line_;
-			break;
 		}
 	}
 

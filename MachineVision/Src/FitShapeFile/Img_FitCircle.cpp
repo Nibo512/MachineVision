@@ -14,6 +14,9 @@ void Img_RANSACFitCircle(NB_Array2D pts, Circle2D& circle, vector<int>& inliners
 	int maxEpo = 10000;
 	for (int i = 0; i < maxEpo; ++i)
 	{
+		//防止进入死循环
+		if (i > 500)
+			break;
 		int effetPoints = 0;
 		//随机选择三个点计算园---注意：这里可能需要特殊处理防止点相同
 		int index_1 = rand() % size;
@@ -37,11 +40,6 @@ void Img_RANSACFitCircle(NB_Array2D pts, Circle2D& circle, vector<int>& inliners
 			double t_P = (double)best_model_p / size;
 			double pow_t_p = t_P * t_P * t_P;
 			maxEpo = log_P / log(1 - pow_t_p) + std::sqrt(1 - pow_t_p) / (pow_t_p);
-		}
-		if (best_model_p > 0.5 * size)
-		{
-			circle = circle_;
-			break;
 		}
 	}
 	//提取局内点
