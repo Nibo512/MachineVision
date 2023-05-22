@@ -41,7 +41,8 @@ const double EPS = 1e-8;
 enum NB_MODEL_FIT_METHOD {
 	OLS_FIT = 0,
 	HUBER_FIT = 1,
-	TUKEY_FIT = 2
+	TUKEY_FIT = 2,
+	TUKEY_FITIMP = 3
 };
 
 using namespace std;

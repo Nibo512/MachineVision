@@ -139,6 +139,36 @@ void PC_TukeyPlaneWeights(NB_Array3D pts, Plane3D& plane, vector<double>& weight
 }
 //==============================================================================================
 
+//Tukey计算权重===================================================================================
+void PC_TukeyPlaneWeights_(NB_Array3D pts, Plane3D& circle, vector<double>& weights/*, int i*/)
+{
+	vector<double> dists(pts.size());
+	for (int i = 0; i < pts.size(); ++i)
+	{
+		dists[i] = PC_PtToPlaneDist(pts[i], circle);
+	}
+	//求限制条件tao
+	vector<double> disttanceSort = dists;
+	sort(disttanceSort.begin(), disttanceSort.end());
+	double tao = disttanceSort[(disttanceSort.size() - 1) / 2] / 0.6745 * 2;
+
+	//更新权重
+	for (int i = 0; i < dists.size(); ++i)
+	{
+		if (dists[i] <= tao)
+		{
+			double d_tao = dists[i] / tao;
+			weights[i] = std::pow((1 - d_tao * d_tao), 2);
+		}
+		else
+		{
+			double d_tao = 2 * dists[i] / tao /*dists[i] - circle.r*/;
+			weights[i] = std::exp(-d_tao/* * d_tao*/);
+		}
+	}
+}
+//================================================================================================
+
 //平面拟合======================================================================================
 //template <typename T1, typename T2>
 void PC_FitPlane(NB_Array3D pts, Plane3D& plane, int k, NB_MODEL_FIT_METHOD method)
@@ -160,6 +190,9 @@ void PC_FitPlane(NB_Array3D pts, Plane3D& plane, int k, NB_MODEL_FIT_METHOD meth
 				break;
 			case TUKEY_FIT:
 				PC_TukeyPlaneWeights(pts, plane, weights);
+				break;
+			case TUKEY_FITIMP:
+				PC_TukeyPlaneWeights_(pts, plane, weights);
 				break;
 			default:
 				break;

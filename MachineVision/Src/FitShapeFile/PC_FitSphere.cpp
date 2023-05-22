@@ -1,6 +1,7 @@
 #include "../../include/FitShapeFile/PC_FitSphere.h"
 #include "../../include/FitShapeFile/ComputeModels.h"
 #include "../../include/BaseOprFile/MathOpr.h"
+#include "../../include/FitShapeFile/PC_FitPlane.h"
 
 //随机一致采样算法计算球========================================================================
 void PC_RANSACFitSphere(NB_Array3D pts, Sphere3D& sphere, vector<int>& inliners, double thres)
@@ -184,7 +185,7 @@ void PC_FitSphere(NB_Array3D pts, Sphere3D& sphere, int k, NB_MODEL_FIT_METHOD m
 void PC_FitSphereTest()
 {
 	PC_XYZ::Ptr srcPC(new PC_XYZ);
-	pcl::io::loadPLYFile("F:/nbcode/image/testimage/噪声球.ply", *srcPC);
+	pcl::io::loadPLYFile("D:/data/点云数据/形状数据/百分之五十的随机噪声圆.ply", *srcPC);
 
 	vector<P_XYZ> pts(srcPC->points.size());
 	for (int i = 0; i < srcPC->points.size(); ++i)
@@ -192,11 +193,12 @@ void PC_FitSphereTest()
 		pts[i] = srcPC->points[i];
 	}
 	//std::random_shuffle(pts.begin(), pts.end());
-	Sphere3D sphere;
-	//PC_FitSphere(pts, sphere, 5, NB_MODEL_FIT_METHOD::OLS_FIT);
-
+	Plane3D plane;
 	vector<int> inliners;
-	PC_RANSACFitSphere(pts, sphere, inliners, 0.2);
+	/*PC_RANSACFitSphere(pts, sphere, inliners, 0.2);*/
+
+	PC_RANSACFitPlane(pts, plane, inliners, 0.001);
+
 	PC_XYZ::Ptr inlinerPC(new PC_XYZ);
 	inlinerPC->points.resize(inliners.size());
 	for (int i = 0; i < inliners.size(); ++i)
@@ -204,16 +206,20 @@ void PC_FitSphereTest()
 		inlinerPC->points[i] = pts[inliners[i]];
 	}
 
+	Sphere3D sphere;
+	PC_FitSphere(*inlinerPC, sphere, 5, NB_MODEL_FIT_METHOD::TUKEY_FIT);
+	cout << sphere.x << "," << sphere.y << "," << sphere.z << "," << sphere.r << endl;
+
 	pcl::visualization::PCLVisualizer viewer;
 	viewer.addCoordinateSystem(10);
 	//显示轨迹
 	pcl::visualization::PointCloudColorHandlerCustom<P_XYZ> red(srcPC, 255, 0, 0); //设置点云颜色
 	viewer.addPointCloud(srcPC, red, "srcPC");
-	viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 8, "srcPC");
+	viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "srcPC");
 
 	pcl::visualization::PointCloudColorHandlerCustom<P_XYZ> write(inlinerPC, 255, 255, 255); //设置点云颜色
 	viewer.addPointCloud(inlinerPC, write, "spherePC");
-	viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "spherePC");
+	viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 8, "spherePC");
 	while (!viewer.wasStopped())
 	{
 		viewer.spinOnce();

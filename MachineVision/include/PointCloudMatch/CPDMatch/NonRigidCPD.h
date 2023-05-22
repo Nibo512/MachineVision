@@ -1,12 +1,17 @@
 #pragma once
 #include "CPDMatch.h"
+#include "../../../include/PointCloudMatch/CPDMatch/GPUCPD.h"
 
 class NonRigidCPD :public CPD
 {
 public:
-	NonRigidCPD(float w = 0.2f, int maxIter = 50, float eps = 1e-6f) :
-		CPD(w, maxIter, eps)
-	{}
+	NonRigidCPD(float w = 0.2f, int maxIter = 50, float eps = 1e-6f, bool isCpu = true) :
+		CPD(w, maxIter, eps), m_IsCpu(isCpu)
+	{
+
+	}
+
+	~NonRigidCPD();
 
 	//非刚性配准
 	void Match(PC_XYZ &XPC, PC_XYZ &YPC);
@@ -29,6 +34,9 @@ private:
 	//点云非刚性变换
 	void NonRigidTransPC();
 
+	//GPU计算A
+	void GPUComputeA(Eigen::MatrixXf& A, Eigen::MatrixXf& P1, float c);
+
 private:
 	Eigen::MatrixXf m_GMat;
 	Eigen::MatrixXf m_WMat;
@@ -37,6 +45,16 @@ private:
 	float m_Beta;
 	float m_Lamda;
 	int m_LowRankN;
+
+	bool m_IsCpu;
+
+	//GPU部分
+	float* m_pD_A;
+	float* m_pD_C;
+
+	cublasHandle_t m_CublasHandle;
+
+	cusolverDnHandle_t m_CusolverHandle;
 };
 
 void TestNonRigidMatch();

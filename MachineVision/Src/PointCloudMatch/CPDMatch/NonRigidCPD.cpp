@@ -7,11 +7,26 @@
 void NonRigidCPD::InitNonRigidCompute(PC_XYZ &XPC, PC_XYZ &YPC)
 {
 	InitCompute(XPC, YPC);
-	m_Beta = 4.0f; m_Lamda = 4.0f;
+	m_Beta = 16.0f; m_Lamda = 8.0f;
 	m_GMat = Eigen::MatrixXf::Identity(M, M);
 	m_WMat = Eigen::MatrixXf::Zero(M, 3);
 	m_ResMat = Eigen::MatrixXf::Zero(M, 3);
 	ConstructGMat();
+
+	//cudaMalloc((void**)&m_pD_A, M * M * sizeof(float));
+	//cudaMalloc((void**)&m_pD_C, M * M * sizeof(float));
+	//cublasCreate_v2(&m_CublasHandle);
+	//cusolverDnCreate(&m_CusolverHandle);
+}
+//==============================================================================
+
+//析构==========================================================================
+NonRigidCPD::~NonRigidCPD()
+{
+	//cudaFree(m_pD_A);
+	//cudaFree(m_pD_C);
+	//cublasDestroy_v2(m_CublasHandle);
+	//cusolverDnDestroy(m_CusolverHandle);
 }
 //==============================================================================
 
@@ -30,6 +45,7 @@ void NonRigidCPD::ConstructGMat()
 			m_GMat(m2, m1) = m_GMat(m1, m2);
 		}
 	}
+
 	Eigen::EigenSolver<Eigen::MatrixXf> es(m_GMat);
 
 	Eigen::MatrixXf eigenValue = es.pseudoEigenvalueMatrix();
@@ -67,6 +83,35 @@ void NonRigidCPD::ComputeA(Eigen::MatrixXf &A, Eigen::MatrixXf &dPM, float c)
 }
 //==============================================================================
 
+//GPU计算A======================================================================
+void NonRigidCPD::GPUComputeA(Eigen::MatrixXf& A, Eigen::MatrixXf& P1, float c)
+{
+	Eigen::MatrixXf gMat = Eigen::MatrixXf::Zero(M, M);
+	for (int m = 0; m < M; ++m)
+	{
+		gMat.row(m) = P1(m) * m_GMat.row(m);
+		gMat(m, m) += c + 1.0f / P1(m);
+		//gMat(m, m) = /*m + */0.5;
+	}
+	cudaMemcpy(m_pD_A, gMat.data(), M * M * sizeof(float), cudaMemcpyHostToDevice);
+	GPUCalMatSVD(m_CusolverHandle, m_pD_A, M, M, A);
+	//A = gMat.inverse();
+	/*GPUCalMatInv(m_CublasHandle, m_pD_A, M, m_pD_C);*/
+	//cudaMemcpy(A.data(), m_pD_A, M * M * sizeof(float), cudaMemcpyDeviceToHost);
+	//cudaMemcpy(A.data(), m_pD_C, M * M * sizeof(float), cudaMemcpyDeviceToHost);
+	//fstream file("D:/file_111.csv", ios::app);
+	//for (int m1 = 0; m1 < M; ++m1)
+	//{
+	//	for (int m2 = 0; m2 < M; ++m2)
+	//	{
+	//		file << A(m1, m2) << ",";
+	//	}
+	//	file << endl;
+	//}
+	//file.close();
+}
+//==============================================================================
+
 //计算非刚性变换矩阵============================================================
 void NonRigidCPD::ComputeNonRigidTranMat()
 {
@@ -74,8 +119,9 @@ void NonRigidCPD::ComputeNonRigidTranMat()
 
 	//求解W矩阵
 	Eigen::MatrixXf dPM = (m_PMat.rowwise().sum());
-	Eigen::MatrixXf A;
+	Eigen::MatrixXf A(M, M);
 	ComputeA(A, dPM, m_Lamda * m_Sigma_2);
+	//GPUComputeA(A, dPM, m_Lamda * m_Sigma_2);
 
 	Eigen::MatrixXf PMY(M, 3);
 	for (int m = 0; m < M; ++m)
@@ -113,17 +159,17 @@ void NonRigidCPD::NonRigidTransPC()
 void NonRigidCPD::Match(PC_XYZ &XPC, PC_XYZ &YPC)
 {
 	InitNonRigidCompute(XPC, YPC);
-	int maxIter = 50;
 	int iter = 0;
 
 	double t1 = cv::getTickCount();
-	while (m_Sigma_2 > 1e-8 && iter < maxIter)
+	while (m_Sigma_2 > 1e-8 && iter < m_MaxIter)
 	{
 		//E-Step
 		ComputeP();
 		ComputeNonRigidTranMat();
 		m_ResMat += m_WMat;
 		iter++;
+		//cout << iter << endl;
 	}
 	double t2 = cv::getTickCount();
 	cout << (t2 - t1) / cv::getTickFrequency() << endl;
@@ -146,12 +192,12 @@ void NonRigidCPD::GetResMat(Eigen::MatrixXf &resMat)
 void TestNonRigidMatch()
 {
 	PC_XYZ XPC_, YPC_;
-	pcl::io::loadPLYFile("D:/变形测试点云/1.ply", XPC_);
-	pcl::io::loadPLYFile("D:/变形测试点云/4.ply", YPC_);
+	pcl::io::loadPLYFile("D:/data/变形测试点云/EV/3.ply", YPC_);
+	pcl::io::loadPLYFile("D:/data/变形测试点云/EV/2.ply", XPC_);
 
 	PC_XYZ XPC, YPC;
-	PC_VoxelGrid(XPC_, XPC, 8.0);
-	PC_VoxelGrid(YPC_, YPC, 8.0);
+	PC_VoxelGrid(XPC_, XPC, 8);
+	PC_VoxelGrid(YPC_, YPC, 8);
 
 	//string txtFileX = "C:/Users/Administrator/Downloads/CPD—Data/data2/fish.csv";
 	//string txtFileY = "C:/Users/Administrator/Downloads/CPD—Data/data2/fish_distorted.csv";
@@ -159,7 +205,7 @@ void TestNonRigidMatch()
 	//TxtToPC(txtFileY, YPC, 0);
 
 	float w = 0.2;
-	NonRigidCPD cpdReg(0.2f, 50, 1e-6);
+	NonRigidCPD cpdReg(0.5f, 30, 1e-8, false);
 	cpdReg.Match(XPC, YPC);
 	Eigen::MatrixXf resMat;
 	cpdReg.GetResMat(resMat);

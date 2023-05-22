@@ -4,46 +4,22 @@
 #include <iostream>
 #include "include/BaseOprFile/utils.h"
 #include "include/BaseOprFile/OpenCV_Utils.h"
+#include "cuda_runtime.h"
+#include "device_launch_parameters.h"
+#include <cusolverDn.h>
+#include "include/PointCloudFile/PC_Filter.h"
+#include "include/PointCloudFile/PointCloudOpr.h"
+#include <Eigen/Eigenvalues>
+#include <cublas_v2.h>
+#include "include/PointCloudMatch/CPDMatch/NonRigidCPD.h"
+#include "include/BaseOprFile/DrawShape.h"
+#include "include/FitShapeFile/PC_FitCircle.h"
+#include "include/FitShapeFile/PC_FitSphere.h"
 
 int main()
 {
-	cv::Mat image = cv::imread("D:/data/缺陷图片/image/1.png", 1);
-	cv::Mat imggeT = image.clone();
-	PC_XYZ srcPC, dstPC;
-
-	string camFileName = "D:/data/trackPC.ply";
-	pcl::io::loadPLYFile(camFileName, srcPC);
-
-	//Eigen::Matrix4f transMatPC = Eigen::Matrix4f::Identity();
-	//Eigen::Matrix4f transMatPCT = transMatPC.transpose();
-	//cout << transMatPC << endl << endl;
-	//cout << transMatPCT << endl << endl;
-
-	pcl::visualization::PCLVisualizer viewer;
-	viewer.addCoordinateSystem(10);
-
-	//for (int i = 0; i < srcPC.size(); ++i)
-	//{
-	//	string text = to_string(i + 1);
-	//	/*	viewer.addText(text, srcPC[0].x, srcPC[0].y);*/
-	//	viewer.addText3D(text, srcPC[i], 5.0, 1.0, 1.0, 1.0, text);
-	//}
-
-	pcl::visualization::PointCloudColorHandlerCustom<P_XYZ> red(srcPC.makeShared(), 255, 0, 0); //设置点云颜色
-	viewer.addPointCloud(srcPC.makeShared(), red, "srcPC");
-	viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "srcPC");
-
-	//pcl::visualization::PointCloudColorHandlerCustom<P_XYZ> blue(m_WorldPts.makeShared(), 0, 255, 0); //设置点云颜色
-	//viewer.addPointCloud(m_WorldPts.makeShared(), blue, "m_WorldPts");
-	//viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 8, "m_WorldPts");
-
-	while (!viewer.wasStopped())
-	{
-		viewer.spinOnce();
-	}
-	return(0);
-
-    std::cout << "Hello World!\n";
+	PC_FitCircleTest();
+	return 0;
 }
 
 // 运行程序: Ctrl + F5 或调试 >“开始执行(不调试)”菜单

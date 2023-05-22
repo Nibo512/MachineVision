@@ -1,6 +1,7 @@
 #include "../../include/BaseOprFile/DrawShape.h"
 #include "../../include/PointCloudFile/PointCloudOpr.h"
 #include "../../include/BaseOprFile/MathOpr.h"
+#include <boost/algorithm/string/split.hpp>
 
 //形状变换===============================================================================
 void PC_ShapeTrans(PC_XYZ::Ptr& pc, cv::Vec6d& shape, cv::Point3d& vec)
@@ -82,7 +83,7 @@ void PC_DrawEllipsoid(PC_XYZ::Ptr& ellipsoidPC, cv::Vec6d& ellipsoid, double a, 
 {
 	double step_z = CV_PI / (int(CV_PI / step));
 	double step_xy = std::min(a, b) * step;
-	for (double theta = -CV_PI / 2 + step; theta <= CV_PI / 2; theta += step_z)
+	for (double theta = -CV_PI / 2 + step; theta <= CV_PI; theta += step_z)
 	{
 		double cosVal = std::cos(theta);
 		double r_x = a * cosVal;
@@ -167,7 +168,7 @@ void PC_DrawCube(PC_XYZ::Ptr& rectPC, cv::Vec6d& cube, double a, double b, doubl
 void PC_DrawCircle(PC_XYZ::Ptr& circlePC, cv::Vec6d& circle, double r, double step)
 {
 	step = step < 1e-5 ? 0.1 : step;
-	for (double alpha = 0; alpha < CV_2PI; alpha += step)
+	for (double alpha = 0; alpha < CV_2PI / 4; alpha += step)
 	{
 		float x = r * std::cos(alpha);
 		float y = r * std::sin(alpha);
@@ -182,9 +183,10 @@ void PC_DrawCircle(PC_XYZ::Ptr& circlePC, cv::Vec6d& circle, double r, double st
 void PC_AddNoise(PC_XYZ::Ptr& srcPC, PC_XYZ::Ptr& noisePC, int range, int step)
 {
 	PC_XYZ::Ptr noise_(new PC_XYZ);
-	noise_->points.reserve(srcPC->points.size() / step + 1);
+	//noise_->points.reserve(srcPC->points.size() / step + 1);
 	for (int i = 0; i < srcPC->points.size(); i += step)
 	{
+		int idx = i < srcPC->points.size() - 1 ? i : i - srcPC->points.size();
 		P_XYZ& p = srcPC->points[i];
 		float dist_x = rand() % range;
 		float dist_y = rand() % range;
@@ -205,25 +207,43 @@ void PC_AddNoise(PC_XYZ::Ptr& srcPC, PC_XYZ::Ptr& noisePC, int range, int step)
 void DrawShapeTest()
 {
 	PC_XYZ::Ptr shapePC(new PC_XYZ);
-	cv::Vec6d shape;
-	shape[0] = 12;
-	shape[1] = 25;
-	shape[2] = 8;
-	shape[3] = 53;
-	shape[4] = 35;
-	shape[5] = 86;
-	PC_DrawCircle(shapePC, shape, 60, 0.01);
+	//cv::Vec6d shape;
+	//shape[0] = 25;
+	//shape[1] = 18;
+	//shape[2] = 37;
+	//shape[3] = 98;
+	//shape[4] = 76;
+	//shape[5] = 124;
+	//PC_DrawCircle(shapePC, shape, 156, 0.1);
+
+	fstream data("E:/个人资料/发表的论文/空间圆拟合/圆数据 - 2.csv", ios::in);
+	string dataStr;
+	while (std::getline(data, dataStr))
+	{
+		vector<string> data_;
+		boost::split(data_, dataStr, boost::is_any_of(","));
+		float x = atof(data_[0].data());
+		float y = atof(data_[1].data());
+		float z = atof(data_[2].data());
+		shapePC->push_back({ x, y, z });
+	}
 
 	PC_XYZ::Ptr noisePC(new PC_XYZ);
-	PC_AddNoise(shapePC, noisePC, 10, 2);
+	PC_AddNoise(shapePC, noisePC, 2.0, 1);
+	//shapePC = noisePC;
 
-	//pcl::io::savePLYFile("C:/Users/Administrator/Desktop/testimage/四分之一噪声圆.ply", *noisePC, true);
+	pcl::io::savePLYFile("D:/data/点云数据/形状数据/百分之五十的随机噪声圆.ply", *noisePC, false);
 	pcl::visualization::PCLVisualizer viewer;
-	viewer.addCoordinateSystem(10);
+	//viewer.addCoordinateSystem(10);
 	//显示轨迹
 	pcl::visualization::PointCloudColorHandlerCustom<P_XYZ> red(noisePC, 255, 0, 0); //设置点云颜色
-	viewer.addPointCloud(noisePC, red, "shapePC");
-	viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "shapePC");
+	viewer.addPointCloud(noisePC, red, "noisePC");
+	viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 8, "noisePC");
+
+	pcl::visualization::PointCloudColorHandlerCustom<P_XYZ> green(shapePC, 0, 255, 0); //设置点云颜色
+	viewer.addPointCloud(shapePC, green, "shapePC");
+	viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "shapePC");
+
 	while (!viewer.wasStopped())
 	{
 		viewer.spinOnce();
