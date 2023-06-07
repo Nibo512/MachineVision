@@ -12,21 +12,12 @@ void NonRigidCPD::InitNonRigidCompute(PC_XYZ &XPC, PC_XYZ &YPC)
 	m_WMat = Eigen::MatrixXf::Zero(M, 3);
 	m_ResMat = Eigen::MatrixXf::Zero(M, 3);
 	ConstructGMat();
-
-	//cudaMalloc((void**)&m_pD_A, M * M * sizeof(float));
-	//cudaMalloc((void**)&m_pD_C, M * M * sizeof(float));
-	//cublasCreate_v2(&m_CublasHandle);
-	//cusolverDnCreate(&m_CusolverHandle);
 }
 //==============================================================================
 
 //Œˆππ==========================================================================
 NonRigidCPD::~NonRigidCPD()
 {
-	//cudaFree(m_pD_A);
-	//cudaFree(m_pD_C);
-	//cublasDestroy_v2(m_CublasHandle);
-	//cusolverDnDestroy(m_CusolverHandle);
 }
 //==============================================================================
 
@@ -80,35 +71,6 @@ void NonRigidCPD::ComputeA(Eigen::MatrixXf &A, Eigen::MatrixXf &dPM, float c)
 	{
 		A(m, m) += c;
 	}
-}
-//==============================================================================
-
-//GPUº∆À„A======================================================================
-void NonRigidCPD::GPUComputeA(Eigen::MatrixXf& A, Eigen::MatrixXf& P1, float c)
-{
-	Eigen::MatrixXf gMat = Eigen::MatrixXf::Zero(M, M);
-	for (int m = 0; m < M; ++m)
-	{
-		gMat.row(m) = P1(m) * m_GMat.row(m);
-		gMat(m, m) += c + 1.0f / P1(m);
-		//gMat(m, m) = /*m + */0.5;
-	}
-	cudaMemcpy(m_pD_A, gMat.data(), M * M * sizeof(float), cudaMemcpyHostToDevice);
-	GPUCalMatSVD(m_CusolverHandle, m_pD_A, M, M, A);
-	//A = gMat.inverse();
-	/*GPUCalMatInv(m_CublasHandle, m_pD_A, M, m_pD_C);*/
-	//cudaMemcpy(A.data(), m_pD_A, M * M * sizeof(float), cudaMemcpyDeviceToHost);
-	//cudaMemcpy(A.data(), m_pD_C, M * M * sizeof(float), cudaMemcpyDeviceToHost);
-	//fstream file("D:/file_111.csv", ios::app);
-	//for (int m1 = 0; m1 < M; ++m1)
-	//{
-	//	for (int m2 = 0; m2 < M; ++m2)
-	//	{
-	//		file << A(m1, m2) << ",";
-	//	}
-	//	file << endl;
-	//}
-	//file.close();
 }
 //==============================================================================
 
@@ -205,7 +167,7 @@ void TestNonRigidMatch()
 	//TxtToPC(txtFileY, YPC, 0);
 
 	float w = 0.2;
-	NonRigidCPD cpdReg(0.5f, 30, 1e-8, false);
+	NonRigidCPD cpdReg(0.5f, 30, 1e-8);
 	cpdReg.Match(XPC, YPC);
 	Eigen::MatrixXf resMat;
 	cpdReg.GetResMat(resMat);

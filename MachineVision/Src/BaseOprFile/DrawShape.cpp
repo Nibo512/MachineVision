@@ -207,38 +207,41 @@ void PC_AddNoise(PC_XYZ::Ptr& srcPC, PC_XYZ::Ptr& noisePC, int range, int step)
 void DrawShapeTest()
 {
 	PC_XYZ::Ptr shapePC(new PC_XYZ);
-	//cv::Vec6d shape;
-	//shape[0] = 25;
-	//shape[1] = 18;
-	//shape[2] = 37;
-	//shape[3] = 98;
-	//shape[4] = 76;
-	//shape[5] = 124;
+	cv::Vec6d shape;
+	shape[0] = 25;
+	shape[1] = 18;
+	shape[2] = 37;
+	shape[3] = 98;
+	shape[4] = 76;
+	shape[5] = 124;
 	//PC_DrawCircle(shapePC, shape, 156, 0.1);
 
-	fstream data("E:/个人资料/发表的论文/空间圆拟合/圆数据 - 2.csv", ios::in);
-	string dataStr;
-	while (std::getline(data, dataStr))
-	{
-		vector<string> data_;
-		boost::split(data_, dataStr, boost::is_any_of(","));
-		float x = atof(data_[0].data());
-		float y = atof(data_[1].data());
-		float z = atof(data_[2].data());
-		shapePC->push_back({ x, y, z });
-	}
+	//P_XYZ center(12.5, 98.23, 65.25);
+	PC_DrawPlane(shapePC, shape, 10, 10, 0.1);
 
-	PC_XYZ::Ptr noisePC(new PC_XYZ);
-	PC_AddNoise(shapePC, noisePC, 2.0, 1);
+	//fstream data("E:/个人资料/发表的论文/空间圆拟合/圆数据 - 2.csv", ios::in);
+	//string dataStr;
+	//while (std::getline(data, dataStr))
+	//{
+	//	vector<string> data_;
+	//	boost::split(data_, dataStr, boost::is_any_of(","));
+	//	float x = atof(data_[0].data());
+	//	float y = atof(data_[1].data());
+	//	float z = atof(data_[2].data());
+	//	shapePC->push_back({ x, y, z });
+	//}
+
+	//PC_XYZ::Ptr noisePC(new PC_XYZ);
+	//PC_AddNoise(shapePC, noisePC, 2.0, 1);
 	//shapePC = noisePC;
 
-	pcl::io::savePLYFile("D:/data/点云数据/形状数据/百分之五十的随机噪声圆.ply", *noisePC, false);
+	pcl::io::savePLYFile("D:/平面.ply", *shapePC, false);
 	pcl::visualization::PCLVisualizer viewer;
 	//viewer.addCoordinateSystem(10);
 	//显示轨迹
-	pcl::visualization::PointCloudColorHandlerCustom<P_XYZ> red(noisePC, 255, 0, 0); //设置点云颜色
-	viewer.addPointCloud(noisePC, red, "noisePC");
-	viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 8, "noisePC");
+	//pcl::visualization::PointCloudColorHandlerCustom<P_XYZ> red(noisePC, 255, 0, 0); //设置点云颜色
+	//viewer.addPointCloud(noisePC, red, "noisePC");
+	//viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 8, "noisePC");
 
 	pcl::visualization::PointCloudColorHandlerCustom<P_XYZ> green(shapePC, 0, 255, 0); //设置点云颜色
 	viewer.addPointCloud(shapePC, green, "shapePC");

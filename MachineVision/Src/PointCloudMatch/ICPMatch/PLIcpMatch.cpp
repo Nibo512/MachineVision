@@ -1,4 +1,4 @@
-#include "../../include/PointCloudMatch/PLIcpMatch.h"
+#include "../../../include/PointCloudMatch/ICPMatch/PLIcpMatch.h"
 #include "../../include/PointCloudFile/PC_Filter.h"
 #include "../../include/PointCloudFile/PC_Filter.h"
 
@@ -67,29 +67,8 @@ void ComputePtLine(PC_XYZ &srcPC, PC_N &normals, int size)
 	}
 }
 
-//寻找最邻近点====================================================================
-void JCMATCH::JC_FindKnnPair()
-{
-	int ptNum = m_SrcPC.size();
-	P_XYZ *pSrc = m_SrcPC.points.data();
-	m_PairIdxes.resize(0);
-	m_PairIdxes.reserve(ptNum);
-
-	for (int i = 0; i < ptNum; ++i)
-	{
-		vector<int> PIdx;
-		vector<float> PDist;
-		m_TgtKdTree.nearestKSearch(pSrc[i], 1, PIdx, PDist);
-		if (PDist[0] < m_MaxPPDist)
-		{
-			m_PairIdxes.push_back(PairIdx(i, PIdx[0]));
-		}
-	}
-}
-//================================================================================
-
 //计算变换矩阵---仿射变换=========================================================
-void JCMATCH::JC_ComputeAffineTransMat(Eigen::Matrix4f &transMat)
+void PLICP::ComputeAffineTransMat(Eigen::Matrix4f &transMat)
 {
 	int ptNum = m_PairIdxes.size();
 	P_XYZ *pSrc = m_SrcPC.points.data();
@@ -133,7 +112,7 @@ void JCMATCH::JC_ComputeAffineTransMat(Eigen::Matrix4f &transMat)
 //================================================================================
 
 //刚性变换========================================================================
-void JCMATCH::JC_ComputeRigidTranMat(Eigen::Matrix4f &transMat)
+void PLICP::ComputeRigidTranMat(Eigen::Matrix4f &transMat)
 {
 	int ptNum = m_PairIdxes.size();
 	P_XYZ *pSrc = m_SrcPC.points.data();
@@ -182,14 +161,14 @@ void JCMATCH::JC_ComputeRigidTranMat(Eigen::Matrix4f &transMat)
 //================================================================================
 
 //计算匹配分数====================================================================
-float JCMATCH::ComputeFitScore()
+float PLICP::ComputeFitScore()
 {
 	return (float)m_EffPtNum / (float)m_SrcPC.size();
 }
 //================================================================================
 
 //计算loss========================================================================
-bool JCMATCH::ComputeLoss()
+bool PLICP::ComputeLoss()
 {
 	int ptNum = m_SrcPC.size();
 	P_XYZ *pSrc = m_SrcPC.points.data();
@@ -240,7 +219,7 @@ void ConstructTransMat(double alpha, double beta, double gamma,
 //================================================================================
 
 //带法向量的======================================================================
-void JCMATCH::JC_ComputeTransMatWithNormal(Eigen::Matrix4f &transMat)
+void PLICP::ComputeTransMatWithNormal(Eigen::Matrix4f &transMat)
 {
 	Eigen::Matrix<double, 6, 6> ATA = Eigen::Matrix<double, 6, 6>::Zero();
 	Eigen::Matrix<double, 6, 1> ATb = Eigen::Matrix<double, 6, 1>::Zero();
@@ -290,7 +269,7 @@ void JCMATCH::JC_ComputeTransMatWithNormal(Eigen::Matrix4f &transMat)
 //================================================================================
 
 //匹配程序========================================================================
-float JCMATCH::JC_PCMatch(PC_XYZ &srcPC, PC_XYZ &tgtPC, Eigen::Matrix4f &transMat)
+float PLICP::Match(PC_XYZ &srcPC, PC_XYZ &tgtPC, Eigen::Matrix4f &transMat)
 {
 	//计算目标点云中没点的方向向量
 	m_TgtPC = tgtPC;
@@ -302,11 +281,11 @@ float JCMATCH::JC_PCMatch(PC_XYZ &srcPC, PC_XYZ &tgtPC, Eigen::Matrix4f &transMa
 	for (int k = 0; k < m_MaxIter; ++k)
 	{
 		//获取配对点
-		JC_FindKnnPair();
+		FindKnnPair();
 		if (m_PairIdxes.size() < 4)
 			return 0;
 		//给原始点云增加权重
-		JC_ComputeTransMatWithNormal(transMat_);
+		ComputeTransMatWithNormal(transMat_);
 		for (int idx = 0; idx < 12; ++idx)
 		{
 			if (isnan(transMat_(idx)))
@@ -333,10 +312,10 @@ void PLIcpMatchTest()
 	//PC_XYZ voxelPC;
 	//PC_VoxelGrid(modelSample, voxelPC, 2.0);
 
-	JCMATCH JCMATCHTest;
+	PLICP MATCHTest;
 
 	Eigen::Matrix4f transMat = Eigen::Matrix4f::Identity();
-	JCMATCHTest.JC_PCMatch(processSample, modelSample, transMat);
+	MATCHTest.Match(processSample, modelSample, transMat);
 
 	PC_XYZ smoothTrack_T;
 	pcl::transformPointCloud(processSample, smoothTrack_T, transMat);

@@ -18,7 +18,7 @@
 
 int main()
 {
-	PC_FitCircleTest();
+	DrawShapeTest();
 	return 0;
 }
 
