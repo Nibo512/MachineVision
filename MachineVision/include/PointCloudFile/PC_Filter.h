@@ -37,5 +37,8 @@ void PC_ProjectFilter(PC_XYZ &srcPC, PC_XYZ &dstPC, float v_x, float v_y, float 
 /*导向滤波*/
 void PC_GuideFilter(PC_XYZ& srcPC, PC_XYZ& dstPC, double radius, double lamda);
 
+//降采样
+void PC_DownSample(PC_XYZ& srcPC, PC_XYZ& dstPC, float size, int mode);
+
 //测试程序
 void PC_FitlerTest();

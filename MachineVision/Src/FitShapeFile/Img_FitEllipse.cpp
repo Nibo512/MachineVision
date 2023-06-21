@@ -47,8 +47,6 @@ void Img_RANSACFitEllipse(NB_Array2D pts, Ellipse2D& ellipse, vector<int>& inlin
 	vector<double> ellipse_(6);
 	for (int i = 0; i < maxEpo; ++i)
 	{
-		if (i > 500)
-			break;
 		int effetPoints = 0;
 		//随机选择六个个点计算椭圆---注意：这里可能需要特殊处理防止点相同
 		pts_[0] = pts[rand() % size]; pts_[1] = pts[rand() % size];	pts_[2] = pts[rand() % size];
@@ -69,11 +67,6 @@ void Img_RANSACFitEllipse(NB_Array2D pts, Ellipse2D& ellipse, vector<int>& inlin
 			double t_P = (double)best_model_p / size;
 			double pow_t_p = std::pow(t_P, 6);
 			maxEpo = log_P / log(1 - pow_t_p) + std::sqrt(1 - pow_t_p) / (pow_t_p);
-		}
-		if (best_model_p > 0.5 * size)
-		{
-			ellipse = normEllipse;
-			break;
 		}
 	}
 	//提取局内点

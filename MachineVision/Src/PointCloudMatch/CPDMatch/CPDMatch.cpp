@@ -69,6 +69,7 @@ void CPD::ComputeP()
 {
 	float res = std::pow(CV_2PI * m_Sigma_2, 1.5f) * m_W / (1.0 - m_W) * float(M) / float(N);
 	float sigma_2 = -1.0f / (2.0f * m_Sigma_2);
+
 #pragma omp parallel for
 	for (int n = 0; n < N; ++n)
 	{
@@ -81,14 +82,15 @@ void CPD::ComputeP()
 			float diff_x = x_x - m_YMat(m, 0);
 			float diff_y = x_y - m_YMat(m, 1);
 			float diff_z = x_z - m_YMat(m, 2);
-			m_PMat(m, n) = (diff_x * diff_x + diff_y * diff_y + diff_z * diff_z) * sigma_2;
-			m_PMat(m, n) = std::exp(m_PMat(m, n));
-			sum_ += m_PMat(m, n);
+			float x = (diff_x * diff_x + diff_y * diff_y + diff_z * diff_z) * sigma_2;
+			x = x > -15 ? std::exp(x) : 0.0f;
+			m_PMat(m, n) = x;
+			sum_ += x;
 		}
-		sum_ += res;
+		sum_ = 1.0f / (sum_ + res + 1e-12);
 		for (int m = 0; m < M; ++m)
 		{
-			m_PMat(m, n) /= (sum_ + 1e-12);
+			m_PMat(m, n) *= sum_;
 		}
 	}
 }

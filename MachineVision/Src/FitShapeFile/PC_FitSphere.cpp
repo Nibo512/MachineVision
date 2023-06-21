@@ -16,8 +16,6 @@ void PC_RANSACFitSphere(NB_Array3D pts, Sphere3D& sphere, vector<int>& inliners,
 	vector<Point3d> pts_(4);
 	for (int i = 0; i < maxEpo; ++i)
 	{
-		if (i > 500)
-			break;
 		int effetPoints = 0;
 		//随机选择四个点计算球---注意：这里可能需要特殊处理防止点相同
 		pts_[0] = pts[rand() % size]; pts_[1] = pts[rand() % size];

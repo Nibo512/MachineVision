@@ -14,8 +14,6 @@ void PC_RANSACFitLine(NB_Array3D pts, Line3D& line, vector<int>& inliners, doubl
 	int maxEpo = 10000;
 	for (int i = 0; i < maxEpo; ++i)
 	{
-		if (i > 500)
-			break;
 		int effetPoints = 0;
 		//随机选择两个点拟合直线---注意：这里可能需要特殊处理防止点相同
 		Point3d pt1 = pts[rand() % size]; 

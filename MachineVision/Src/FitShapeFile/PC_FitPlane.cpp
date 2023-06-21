@@ -15,9 +15,6 @@ void PC_RANSACFitPlane(NB_Array3D pts, Plane3D& plane, vector<int>& inliners, do
 	vector<Point3d> pts_(3);
 	for (int i = 0; i < maxEpo; ++i)
 	{
-		//防止进入死循环
-		if (i > 500)
-			break;
 		int effetPoints = 0;
 		//随机选择三个点计算平面---注意：这里可能需要特殊处理防止点相同
 		pts_[0] = pts[rand() % size]; pts_[1] = pts[rand() % size];	pts_[2] = pts[rand() % size];

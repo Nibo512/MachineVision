@@ -104,6 +104,37 @@ void PC_GuideFilter(PC_XYZ& srcPC, PC_XYZ& dstPC, double radius, double lamda)
 }
 //===================================================================================
 
+//½µ²ÉÑù=============================================================================
+void PC_DownSample(PC_XYZ& srcPC, PC_XYZ& dstPC, float size, int mode)
+{
+	size_t len = srcPC.points.size();
+	if (len == 0)
+		return;
+	std::vector<bool> flags(len, false);
+	pcl::KdTreeFLANN<P_XYZ> kdtree;
+	kdtree.setInputCloud(srcPC.makeShared());
+	for (size_t i = 0; i < len; ++i)
+	{
+		if (flags[i])
+			continue;
+		P_XYZ& ref_p = srcPC.points[i];
+		std::vector<int> P_Idx;
+		std::vector<float> P_Dist;
+		if (mode == 0)
+			kdtree.radiusSearch(ref_p, size, P_Idx, P_Dist);
+		else
+			kdtree.nearestKSearch(ref_p, size, P_Idx, P_Dist);
+		float sum_x = 0.0f, sum_y = 0.0f, sum_z = 0.0f;
+		for (int j = 0; j < P_Idx.size(); ++j)
+		{
+			P_XYZ& p_ = srcPC.points[P_Idx[j]];
+			sum_x += p_.x; sum_y += p_.y; sum_z += p_.z;
+			flags[P_Idx[j]] = true;
+		}
+		dstPC.points.push_back({ sum_x / P_Idx.size(), sum_y / P_Idx.size(), sum_z / P_Idx.size() });
+	}
+}
+////===================================================================================
 
 void PC_FitlerTest()
 {

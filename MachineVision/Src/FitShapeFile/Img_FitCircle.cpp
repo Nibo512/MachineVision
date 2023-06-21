@@ -15,8 +15,6 @@ void Img_RANSACFitCircle(NB_Array2D pts, Circle2D& circle, vector<int>& inliners
 	for (int i = 0; i < maxEpo; ++i)
 	{
 		//防止进入死循环
-		if (i > 500)
-			break;
 		int effetPoints = 0;
 		//随机选择三个点计算园---注意：这里可能需要特殊处理防止点相同
 		int index_1 = rand() % size;

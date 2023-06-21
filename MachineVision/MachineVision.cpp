@@ -15,10 +15,13 @@
 #include "include/BaseOprFile/DrawShape.h"
 #include "include/FitShapeFile/PC_FitCircle.h"
 #include "include/FitShapeFile/PC_FitSphere.h"
+#include "include/PointCloudFile/MLSSmooth.h"
+#include "include/PointCloudFile/PC_CuvaAnalyse.h"
+#include "include/PointCloudFile/PolyFitCurve.h"
 
 int main()
 {
-	DrawShapeTest();
+	PolyCurveFitmoothTest();
 	return 0;
 }
 

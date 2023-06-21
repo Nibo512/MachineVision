@@ -16,8 +16,6 @@ void PC_RANSACFitCircle(NB_Array3D pts, Circle3D& circle, vector<int>& inliners,
 	int maxEpo = 10000;
 	for (int i = 0; i < maxEpo; ++i)
 	{
-		if (i > 500)
-			break;
 		int effetPoints = 0;
 		//随机选择三个点计算园---注意：这里可能需要特殊处理防止点相同
 		int index_1 = rand() % size; int index_2 = rand() % size; int index_3 = rand() % size;
