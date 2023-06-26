@@ -25,7 +25,13 @@ void ComputeExtPt(Eigen::MatrixXf& conf, P_XYZ& extPt);
 SURFTYPE CuvaClass(Eigen::MatrixXf& conf);
 
 //曲率分析
-void CuvaAnalyse(PC_XYZ& pc, PC_XYZ& dstPC);
+void CuvaAnalyse(PC_XYZ& srcPC, PC_XYZ& dstPC);
+
+//计算特征点权重
+float ComputeFPtW(const vector<float>& Ks, const vector<int>& PIdx);
+
+//平均曲率
+void MeanCuraAnalyse(PC_XYZ& srcPC, PC_XYZ& dstPC, int k_n, float thresW);
 
 //曲率分析测试
 void CuvaAnalyseTest();

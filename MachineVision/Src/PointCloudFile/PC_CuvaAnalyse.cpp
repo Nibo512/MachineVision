@@ -76,20 +76,20 @@ SURFTYPE CuvaClass(Eigen::MatrixXf& conf)
 //===================================================================================
 
 //曲率分析===========================================================================
-void CuvaAnalyse(PC_XYZ& pc, PC_XYZ& dstPC)
+void CuvaAnalyse(PC_XYZ& srcPC, PC_XYZ& dstPC)
 {
-	int ptNum = pc.size();
+	int ptNum = srcPC.size();
 	KdTreeFLANN<P_XYZ> kdtree;
-	kdtree.setInputCloud(pc.makeShared());
+	kdtree.setInputCloud(srcPC.makeShared());
 
 	PC_XYZ planePC, ridgePC;
 	for (int i = 0; i < ptNum; ++i)
 	{
 		vector<int> PIdx;
 		vector<float> PDist;
-		kdtree.nearestKSearch(pc[i], 25, PIdx, PDist);
+		kdtree.nearestKSearch(srcPC[i], 25, PIdx, PDist);
 		PC_XYZ idxPC;
-		PC_ExtractPC(pc, PIdx, idxPC);
+		PC_ExtractPC(srcPC, PIdx, idxPC);
 
 		//计算法向量
 		Eigen::Vector3f normals;
@@ -140,6 +140,67 @@ void CuvaAnalyse(PC_XYZ& pc, PC_XYZ& dstPC)
 }
 //===================================================================================
 
+//计算特征点权重=====================================================================
+float ComputeFPtW(const vector<float>& Ks, const vector<int>& PIdx)
+{
+	float sum_k = 0.0;
+	int ptNum = PIdx.size();
+	for (int i = 0; i < ptNum; ++i)
+	{
+		sum_k += Ks[PIdx[i]];
+	}
+	sum_k /= float(ptNum);
+	float diff_sk = 0.0f;
+	float k0 = Ks[PIdx[0]];
+	for (int i = 0; i < ptNum; ++i)
+	{
+		float diff_k = abs(Ks[PIdx[i]]) - sum_k;
+		diff_sk += diff_k * diff_k;
+	}
+	return std::sqrt(diff_sk / float(ptNum)) + std::sqrt((k0 - sum_k) * (k0 - sum_k));
+}
+//===================================================================================
+
+//平均曲率===========================================================================
+void MeanCuraAnalyse(PC_XYZ& srcPC, PC_XYZ& dstPC, int k_n, float thresW)
+{
+	int ptNum = srcPC.size();
+	KdTreeFLANN<P_XYZ> kdtree;
+	kdtree.setInputCloud(srcPC.makeShared());
+
+	vector<float> Ks(ptNum);
+	vector<vector<int>> PIdxes(ptNum);
+	PC_XYZ planePC, ridgePC;
+	for (int i = 0; i < ptNum; ++i)
+	{
+		vector<float> PDist;
+		kdtree.nearestKSearch(srcPC[i], k_n, PIdxes[i], PDist);
+		PC_XYZ idxPC;
+		PC_ExtractPC(srcPC, PIdxes[i], idxPC);
+
+		//计算法向量
+		Eigen::Vector3f normals;
+		P_XYZ gravity;
+		CalNormalAndGravity(idxPC, normals, gravity);
+
+		//计算局部变换矩阵-----没有平移原点
+		Eigen::Matrix4f locTransMat = Eigen::Matrix4f::Identity();
+		CalLocCoordSys(normals, gravity, locTransMat);
+		pcl::transformPointCloud(idxPC, idxPC, locTransMat);
+
+		Eigen::MatrixXf res;
+		FitQuadPoly(idxPC, res);
+		Ks[i] = 4.0f * res(0) * res(2) - res(1) * res(1);
+	}
+	for (int i = 0; i < ptNum; ++i)
+	{
+		float w = ComputeFPtW(Ks, PIdxes[i]);
+		if (w > thresW)
+			dstPC.push_back(srcPC[i]);
+	}
+}
+//===================================================================================
+
 //曲率分析测试
 void CuvaAnalyseTest()
 {
@@ -151,7 +212,7 @@ void CuvaAnalyseTest()
 	PC_DownSample(srcPC, samplePC, 1.5, 0);
 
 	PC_XYZ dstPC;
-	CuvaAnalyse(samplePC, dstPC);
+	MeanCuraAnalyse(samplePC, dstPC, 10, 3e-3);
 
 	pcl::visualization::PCLVisualizer viewer("srcPC");
 	viewer.addCoordinateSystem(2);

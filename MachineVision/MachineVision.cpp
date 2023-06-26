@@ -21,7 +21,7 @@
 
 int main()
 {
-	PolyCurveFitmoothTest();
+	PC_FitlerTest();
 	return 0;
 }
 
