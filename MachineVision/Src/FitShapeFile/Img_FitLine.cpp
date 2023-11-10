@@ -116,6 +116,7 @@ void Img_TukeyLineWeights(NB_Array2D pts, Line2D& line, vector<double>& weights)
 	sort(disttanceSort.begin(), disttanceSort.end());
 	double tao = disttanceSort[(disttanceSort.size() - 1) / 2] / 0.6745 * 2;
 
+	tao = std::max(tao, 1e-12);
 	for (int i = 0; i < dists.size(); ++i)
 	{
 		if (dists[i] <= tao)
@@ -161,41 +162,76 @@ void Img_FitLine(NB_Array2D pts, Line2D& line, int k, NB_MODEL_FIT_METHOD method
 //二维直线拟合测试============================================================================
 void Img_FitLineTest()
 {
-	string imgPath = "C:/Users/Administrator/Desktop/testimage/7.bmp";
-	cv::Mat srcImg = cv::imread(imgPath, 0);
-	cv::Mat binImg;
-	cv::threshold(srcImg, binImg, 10, 255, ThresholdTypes::THRESH_BINARY_INV);
-	vector<vector<cv::Point>> contours;
-	cv::findContours(binImg, contours, RetrievalModes::RETR_LIST, ContourApproximationModes::CHAIN_APPROX_NONE);
+	//string imgPath = "D:/data/TestImage/直线拟合.bmp";
+	//cv::Mat srcImg = cv::imread(imgPath, 0);
+	//cv::Mat binImg;
+	//cv::threshold(srcImg, binImg, 10, 255, ThresholdTypes::THRESH_BINARY_INV);
+	//vector<vector<cv::Point>> contours;
+	//cv::findContours(binImg, contours, RetrievalModes::RETR_LIST, ContourApproximationModes::CHAIN_APPROX_NONE);
 
-	vector<cv::Point2f> pts(contours.size());
-	for (int i = 0; i < contours.size(); ++i)
-	{
-		int len = contours[i].size();
-		float sum_x = 0.0f, sum_y = 0.0f;
-		for (int j = 0; j < len; ++j)
-		{
-			sum_x += contours[i][j].x;
-			sum_y += contours[i][j].y;
-		}
-		pts[i].x = sum_x / len;
-		pts[i].y = sum_y / len;
-	}
+	//vector<cv::Point2f> pts(contours.size());
+	//for (int i = 0; i < contours.size(); ++i)
+	//{
+	//	int len = contours[i].size();
+	//	float sum_x = 0.0f, sum_y = 0.0f;
+	//	for (int j = 0; j < len; ++j)
+	//	{
+	//		sum_x += contours[i][j].x;
+	//		sum_y += contours[i][j].y;
+	//	}
+	//	pts[i].x = sum_x / len;
+	//	pts[i].y = sum_y / len;
+	//}
+
+	vector<cv::Point2f> pts(6);
+	pts[0] = cv::Point2f(382, 120); pts[1] = cv::Point2f(403, 118);
+	pts[2] = cv::Point2f(425, 118); pts[3] = cv::Point2f(447, 118);
+	pts[4] = cv::Point2f(469, 118); pts[5] = cv::Point2f(490, 118);
 
 	Line2D line;
 	vector<int> inliners;
-	Img_RANSACFitLine(pts, line, inliners, 2);
-	//Img_FitLine(pts, line, 5, NB_MODEL_FIT_METHOD::TUKEY_FIT);
-	cv::Point s_pt, e_pt;
-	s_pt.x = 35; s_pt.y = -(line.c + 35 * line.a) / line.b;
-	e_pt.x = 800; e_pt.y = -(line.c + 800 * line.a) / line.b;
+	//Img_RANSACFitLine(pts, line, inliners, 2);
+	Img_FitLine(pts, line, 5, NB_MODEL_FIT_METHOD::TUKEY_FIT);
 
-	Mat colorImg;
-	cv::cvtColor(srcImg, colorImg, cv::COLOR_GRAY2BGR);
-	cv::line(colorImg, s_pt, e_pt, cv::Scalar(0, 255, 0), 3);
-	for (int i = 0; i < inliners.size(); ++i)
+	cv::Mat image(cv::Size(800, 200), CV_8UC3, cv::Scalar(0));
+	for (int i = 0; i < pts.size(); ++i)
 	{
-		cv::line(colorImg, pts[inliners[i]], pts[inliners[i]], cv::Scalar(0, 0, 255), 5);
+		cv::line(image, pts[i], pts[i], cv::Scalar(255,255,255), 3);
 	}
+
+	cv::Point s_pt, e_pt;
+	s_pt.x = 360; s_pt.y = -(line.c + s_pt.x * line.a) / line.b;
+	e_pt.x = 500; e_pt.y = -(line.c + e_pt.x * line.a) / line.b;
+
+	//Mat colorImg;
+	//cv::cvtColor(srcImg, colorImg, cv::COLOR_GRAY2BGR);
+	//cv::line(colorImg, s_pt, e_pt, cv::Scalar(0, 255, 0), 1);
+
+
+	//Img_FitLine(pts, line, 5, NB_MODEL_FIT_METHOD::TUKEY_FIT);
+	//s_pt.x = 35; s_pt.y = -(line.c + 35 * line.a) / line.b;
+	//e_pt.x = 800; e_pt.y = -(line.c + 800 * line.a) / line.b;
+	cv::line(image, s_pt, e_pt, cv::Scalar(0, 0, 255), 1);
+	//cv::imwrite("D:/data/TestImage/直线拟合Res.bmp", colorImg);
+
+	//int width = colorImg.cols;
+	//int height = colorImg.rows;
+	//VideoWriter video;
+	//video.open("D:/data/TestImage/直线拟合Res.avi", VideoWriter::fourcc('M', 'J', 'P', 'G'), 30, cv::Size(width, height), true);
+	//if (!video.isOpened())
+	//	cout << "mp4创建失败!" << endl;
+
+	//for (int i = 0; i < 100; ++i)
+	//{
+	//	for (int j = 1; j <= 6; ++j)
+	//	{
+	//		video.write(colorImg);
+	//	}
+	//}
+
+	//for (int i = 0; i < inliners.size(); ++i)
+	//{
+	//	cv::line(colorImg, pts[inliners[i]], pts[inliners[i]], cv::Scalar(0, 0, 255), 1);
+	//}
 }
 //============================================================================================

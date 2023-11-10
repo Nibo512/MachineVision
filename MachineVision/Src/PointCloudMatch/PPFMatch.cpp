@@ -321,7 +321,7 @@ void PPFTestProgram()
 	//计算法向量
 	P_XYZ viewPt(0, 0, 1000);
 	PC_XYZ downModelPC;
-	PC_VoxelGrid(modelPC, downModelPC, stepSample);
+	//PC_VoxelGrid(modelPC, downModelPC, stepSample);
 	PC_N modelNormal;
 	PC_ComputePCNormal(downModelPC, modelNormal, 2 * stepSample);
 	

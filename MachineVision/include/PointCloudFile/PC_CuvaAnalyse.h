@@ -1,7 +1,7 @@
 #pragma once
 #include "../BaseOprFile/utils.h"
 
-const float CUVATHRES = 1e-3;
+const float CUVATHRES = 1e-6;
 
 enum SURFTYPE
 {

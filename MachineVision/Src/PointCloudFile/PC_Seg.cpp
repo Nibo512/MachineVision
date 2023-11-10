@@ -169,7 +169,7 @@ void PC_CurvatureSeg(PC_XYZ &srcPC, PC_N &normals, vector<int> &indexs, double H
 	for (int i = 0; i < pts_nun; ++i)
 	{
 		double curvature = normals[i].curvature;
-		if (curvature > L_Thres && curvature < H_Thres)
+		if (curvature < L_Thres || curvature > H_Thres)
 		{
 			indexs.push_back(i);
 		}
@@ -181,40 +181,46 @@ void PC_CurvatureSeg(PC_XYZ &srcPC, PC_N &normals, vector<int> &indexs, double H
 void PC_SegTest()
 {
 	PC_XYZ srcPC;
-	string path = "C:/Users/Administrator/Desktop/testimage/相机1.ply";
+	string path = "D:/samplePC.ply";
 	pcl::io::loadPLYFile(path, srcPC);
-	PC_XYZ downSrcPC;
-	PC_VoxelGrid(srcPC, downSrcPC, 0.2);
-	vector<vector<int>> indexs;
-	PC_DBSCANSeg(downSrcPC, indexs, 0.5, 5, 0, 10000000);
+	//PC_XYZ downSrcPC;
+	//PC_VoxelGrid(srcPC, downSrcPC, 0.2);
+	vector<int> indexs;
 
-	//PC_XYZ::Ptr dstPC(new PC_XYZ);
-	//PC_ExtractIdxPC(downSrcPC, dstPC, indexs[3]);
+	pcl::search::Search<P_XYZ>::Ptr tree;
+	pcl::NormalEstimation<P_XYZ, P_N> ne;
+	ne.setInputCloud(srcPC.makeShared());
+	ne.setSearchMethod(tree);
+	ne.setRadiusSearch(5.0);
+	PC_N normals;
+	ne.compute(normals);
 
-	for (int i = 0; i < indexs.size(); ++i)
+	PC_CurvatureSeg(srcPC, normals, indexs, 100000, 0.001);
+	PC_XYZ dstPC;
+	PC_ExtractPC(srcPC, indexs, dstPC);
+
+	std::vector<P_IDX> clusters;
+	PC_EuclideanSeg(dstPC, clusters, 3.0);
+
+	for (int i = 0; i < clusters.size(); ++i)
 	{
-		PC_XYZ dstPC;
-		PC_ExtractPC(downSrcPC, indexs[i], dstPC);
-		pcl::visualization::PCLVisualizer viewer;
+		PC_XYZ selPC;
+		PC_ExtractPC(dstPC, clusters[1].indices, selPC);
+
+		pcl::visualization::PCLVisualizer viewer("srcPC");
 		viewer.addCoordinateSystem(10);
 		//显示轨迹
-		pcl::visualization::PointCloudColorHandlerCustom<P_XYZ> red(downSrcPC.makeShared(), 255, 0, 0); //设置点云颜色
-		viewer.addPointCloud(downSrcPC.makeShared(), red, "downSrcPC");
-		viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "downSrcPC");
+		pcl::visualization::PointCloudColorHandlerCustom<P_XYZ> red(srcPC.makeShared(), 255, 0, 0); //设置点云颜色
+		viewer.addPointCloud(srcPC.makeShared(), red, "srcPC");
+		viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "srcPC");
 
-		pcl::visualization::PointCloudColorHandlerCustom<P_XYZ> write(dstPC.makeShared(), 255, 255, 255); //设置点云颜色
-		viewer.addPointCloud(dstPC.makeShared(), write, "dstPC");
-		viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "dstPC");
+		pcl::visualization::PointCloudColorHandlerCustom<P_XYZ> green(selPC.makeShared(), 0, 255, 0); //设置点云颜色
+		viewer.addPointCloud(selPC.makeShared(), green, "selPC");
+		viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 8, "selPC");
+
 		while (!viewer.wasStopped())
 		{
 			viewer.spinOnce();
 		}
 	}
-
-	//PC_XYZ::Ptr v_srcPC(new PC_XYZ);
-	//PC_VoxelGrid(srcPC, v_srcPC, 1.6f);
-	//float large_r = 20.0f;
-	//float small_r = 2.0f;
-	//float thresVal = 0.86f;
-	//DONSeg(v_srcPC, large_r, small_r, thresVal);
 }

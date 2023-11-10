@@ -4,6 +4,7 @@
 #include "../../include/BaseOprFile/MathOpr.h"
 #include "../../include/PointCloudFile/MLSSmooth.h"
 #include "../../include/PointCloudFile/PC_Filter.h"
+#include "../../include/PointCloudFile/PC_Seg.h"
 
 //拟合多项式=========================================================================
 void FitQuadPoly(PC_XYZ& srcPC, Eigen::MatrixXf& res)
@@ -104,7 +105,7 @@ void CuvaAnalyse(PC_XYZ& srcPC, PC_XYZ& dstPC)
 		Eigen::MatrixXf res;
 		FitQuadPoly(idxPC, res);
 
-		if (CuvaClass(res) == SURFTYPE::PLANE)
+		if (CuvaClass(res) == SURFTYPE::SADDLERIDGE)
 		{
 			P_XYZ featurePt;
 			Eigen::Matrix4f locTransMatInv = locTransMat.inverse();
@@ -113,15 +114,15 @@ void CuvaAnalyse(PC_XYZ& srcPC, PC_XYZ& dstPC)
 			planePC.push_back(featurePt);
 		/*	planePC += idxPC;*/
 		}
-		if (CuvaClass(res) == SURFTYPE::RIDGE)
-		{
-			P_XYZ featurePt;
-			Eigen::Matrix4f locTransMatInv = locTransMat.inverse();
-			//pcl::transformPointCloud(idxPC, idxPC, locTransMatInv);
-			PC_TransLatePoint(locTransMatInv, idxPC[0], featurePt);
-			ridgePC.push_back(featurePt);
-			//ridgePC += idxPC;
-		}
+		//if (CuvaClass(res) == SURFTYPE::RIDGE)
+		//{
+		//	P_XYZ featurePt;
+		//	Eigen::Matrix4f locTransMatInv = locTransMat.inverse();
+		//	//pcl::transformPointCloud(idxPC, idxPC, locTransMatInv);
+		//	PC_TransLatePoint(locTransMatInv, idxPC[0], featurePt);
+		//	ridgePC.push_back(featurePt);
+		//	//ridgePC += idxPC;
+		//}
 	}
 	pcl::visualization::PCLVisualizer viewer("srcPC");
 	viewer.addCoordinateSystem(2);
@@ -195,7 +196,7 @@ void MeanCuraAnalyse(PC_XYZ& srcPC, PC_XYZ& dstPC, int k_n, float thresW)
 	for (int i = 0; i < ptNum; ++i)
 	{
 		float w = ComputeFPtW(Ks, PIdxes[i]);
-		if (w > thresW)
+		if (w < thresW)
 			dstPC.push_back(srcPC[i]);
 	}
 }
@@ -204,30 +205,41 @@ void MeanCuraAnalyse(PC_XYZ& srcPC, PC_XYZ& dstPC, int k_n, float thresW)
 //曲率分析测试
 void CuvaAnalyseTest()
 {
-	string pc_rotpath = "D:/data/变形测试点云/EV/m_SrcPC_14.ply";
+	string pc_rotpath = "D:/samplePC.ply";
 	PC_XYZ srcPC;
 	pcl::io::loadPLYFile(pc_rotpath, srcPC);
 
-	PC_XYZ samplePC;
-	PC_DownSample(srcPC, samplePC, 1.5, 0);
+	//PC_XYZ samplePC;
+	//PC_DownSample(srcPC, samplePC, 1.5, 0);
 
 	PC_XYZ dstPC;
-	MeanCuraAnalyse(samplePC, dstPC, 10, 3e-3);
+	MeanCuraAnalyse(srcPC, dstPC, 10, 5e-4);
 
-	pcl::visualization::PCLVisualizer viewer("srcPC");
-	viewer.addCoordinateSystem(2);
-	//显示轨迹
+	std::vector<P_IDX> clusters;
+	PC_EuclideanSeg(dstPC, clusters, 3.0);
 
-	pcl::visualization::PointCloudColorHandlerCustom<P_XYZ> red(samplePC.makeShared(), 255, 0, 0); //设置点云颜色
-	viewer.addPointCloud(samplePC.makeShared(), red, "samplePC");
-	viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "samplePC");
-
-	pcl::visualization::PointCloudColorHandlerCustom<P_XYZ> green(dstPC.makeShared(), 0, 255, 0); //设置点云颜色
-	viewer.addPointCloud(dstPC.makeShared(), green, "dstPC");
-	viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "dstPC");
-
-	while (!viewer.wasStopped())
+	for (int i = 0; i < clusters.size(); ++i)
 	{
-		viewer.spinOnce();
+		PC_XYZ selPC;
+		PC_ExtractPC(dstPC, clusters[i].indices, selPC);
+
+		pcl::visualization::PCLVisualizer viewer("srcPC");
+		viewer.addCoordinateSystem(10);
+		//显示轨迹
+		pcl::visualization::PointCloudColorHandlerCustom<P_XYZ> red(srcPC.makeShared(), 255, 0, 0); //设置点云颜色
+		viewer.addPointCloud(srcPC.makeShared(), red, "srcPC");
+		viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "srcPC");
+
+		pcl::visualization::PointCloudColorHandlerCustom<P_XYZ> green(selPC.makeShared(), 0, 255, 0); //设置点云颜色
+		viewer.addPointCloud(selPC.makeShared(), green, "selPC");
+		viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 8, "selPC");
+
+		while (!viewer.wasStopped())
+		{
+			viewer.spinOnce();
+		}
 	}
+
+	//PC_XYZ dstPC_1;
+	//MeanCuraAnalyse(dstPC, dstPC_1, 10, 2e-3);
 }

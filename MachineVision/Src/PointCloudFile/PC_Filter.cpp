@@ -1,5 +1,17 @@
 #include "../../include/PointCloudFile/PC_Filter.h"
 
+//ÌåËØÂË²¨===========================================================================
+void PC_VoxelGrid(PC_XYZ& srcPC, PC_XYZ& dstPC, float leafSize)
+{
+	if (srcPC.size() == 0)
+		return;
+	VoxelGrid<P_XYZ> vg;
+	vg.setInputCloud(srcPC.makeShared());
+	vg.setLeafSize(leafSize, leafSize, leafSize);
+	vg.filter(dstPC);
+}
+//===================================================================================
+
 //Ö±Í¨ÂË²¨===========================================================================
 void PC_PassFilter(PC_XYZ &srcPC, PC_XYZ &dstPC, const string mode, double minVal, double maxVal)
 {

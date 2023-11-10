@@ -160,7 +160,7 @@ void DrawContours(Mat &srcImg, vector<Point2f> &contours, Point2f offset)
 	for (int i = 0; i < contours.size(); i++)
 	{
 		Point2f drawPoint = contours[i] + offset + Point2f(0.5, 0.5);
-		line(srcImg, drawPoint, drawPoint, Scalar(0, 0, 255), 1);
+		line(srcImg, drawPoint, drawPoint, Scalar(0, 0, 255), 2);
 	}
 }
 //====================================================================================

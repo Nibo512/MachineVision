@@ -19,6 +19,9 @@
     dstPC：处理后的输出点云
 */
 
+//体素滤波---下采样
+void PC_VoxelGrid(PC_XYZ& srcPC, PC_XYZ& dstPC, float leafSize);
+
 //直通滤波----保留指定方向上指定区域的点云
 void PC_PassFilter(PC_XYZ &srcPC, PC_XYZ &dstPC, const string mode, double minVal, double maxVal);
 

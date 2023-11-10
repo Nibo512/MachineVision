@@ -34,6 +34,7 @@ private:
 	//点云刚性变换
 	void RigidTransPC();
 
+public:
 	//刚性变换中使用
 	float m_S;   //放大率
 	Eigen::Matrix3f m_RotMat;  //旋转矩阵

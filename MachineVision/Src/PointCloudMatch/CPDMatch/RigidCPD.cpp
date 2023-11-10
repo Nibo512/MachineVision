@@ -2,6 +2,7 @@
 #include <Eigen/Eigenvalues>
 #include <boost/algorithm/string/split.hpp>
 #include "../../../include/PointCloudFile/PointCloudOpr.h"
+#include "../../../include/PointCloudFile/PC_Filter.h"
 
 //初始化计算====================================================================
 void RigidCPD::InitRigidCompute(PC_XYZ &XPC, PC_XYZ &YPC)
@@ -156,12 +157,19 @@ void TxtToPC(string &txtFile, PC_XYZ &pc, float offset)
 
 void TestRigidMatch()
 {
-	PC_XYZ XPC, YPC;
+	PC_XYZ XPC_, YPC_;
 
-	string txtFileX = "C:/Users/Administrator/Downloads/CPD—Data/data1/bunny_source.txt";
-	string txtFileY = "C:/Users/Administrator/Downloads/CPD—Data/data1/bunny_target.txt";
-	TxtToPC(txtFileX, XPC, 0);
-	TxtToPC(txtFileY, YPC, 0);
+	string txtFileY = "D:/data/变形测试点云/m_MatchPC.ply";
+	string txtFileX = "D:/data/变形测试点云/m_MatchPC.ply";
+
+	pcl::io::loadPLYFile(txtFileX, XPC_);
+	pcl::io::loadPLYFile(txtFileY, YPC_);
+
+	PC_XYZ XPC, YPC;
+	PC_VoxelGrid(XPC_, XPC, 5);
+	PC_VoxelGrid(YPC_, YPC, 5);
+	//TxtToPC(txtFileX, XPC, 0);
+	//TxtToPC(txtFileY, YPC, 0);
 
 	for (auto &pt : YPC.points)
 	{
@@ -176,6 +184,8 @@ void TestRigidMatch()
 	cpdReg.Match(XPC, YPC);
 	Eigen::MatrixXf resMat;
 	cpdReg.GetResMat(resMat);
+
+	cout << cpdReg.m_S << endl;
 
 	PC_XYZ outPt;
 	pcl::transformPointCloud(YPC, outPt, resMat);

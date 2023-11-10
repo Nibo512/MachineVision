@@ -4,13 +4,9 @@
 #include <iostream>
 #include "include/BaseOprFile/utils.h"
 #include "include/BaseOprFile/OpenCV_Utils.h"
-#include "cuda_runtime.h"
-#include "device_launch_parameters.h"
-#include <cusolverDn.h>
 #include "include/PointCloudFile/PC_Filter.h"
 #include "include/PointCloudFile/PointCloudOpr.h"
 #include <Eigen/Eigenvalues>
-#include <cublas_v2.h>
 #include "include/PointCloudMatch/CPDMatch/NonRigidCPD.h"
 #include "include/BaseOprFile/DrawShape.h"
 #include "include/FitShapeFile/PC_FitCircle.h"
@@ -18,10 +14,16 @@
 #include "include/PointCloudFile/MLSSmooth.h"
 #include "include/PointCloudFile/PC_CuvaAnalyse.h"
 #include "include/PointCloudFile/PolyFitCurve.h"
+#include "include/MatchFile/ShapeMatch.h"
+#include "include/FitShapeFile/Img_FitLine.h"
+#include "include/PointCloudFile/PC_Seg.h"
+#include "include/PointCloudMatch/CPDMatch/RigidCPD.h"
 
 int main()
 {
-	PC_FitlerTest();
+
+	Img_FitLineTest();
+
 	return 0;
 }
 

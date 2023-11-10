@@ -136,6 +136,7 @@ void PC_TukeySphereWeights(NB_Array3D pts, Sphere3D& sphere, vector<double>& wei
 	sort(disttanceSort.begin(), disttanceSort.end());
 	double tao = disttanceSort[(disttanceSort.size() - 1) / 2] / 0.6745 * 2;
 
+	tao = std::max(tao, 1e-12);
 	//更新权重
 	for (int i = 0; i < dists.size(); ++i)
 	{

@@ -36,9 +36,9 @@ bool CreateShapeModel(Mat &modImg, ShapeModel* &model, SPAPLEMODELINFO &shapeMod
 		//中心化轮廓
 		Point2f gravity = Point2f(-models.gravity.x, -models.gravity.y);
 		TranContour(models.coord, gravity);
-		Mat colorImg;
-		cvtColor(imgPry[i], colorImg, COLOR_GRAY2BGR);
-		DrawContours(colorImg, models.coord, models.gravity);
+		//Mat colorImg;
+		//cvtColor(imgPry[i], colorImg, COLOR_GRAY2BGR);
+		//DrawContours(colorImg, models.coord, models.gravity);
 		model->models.push_back(models);
 		model->pyrNum++;
 	}
@@ -73,7 +73,7 @@ void TopMatch(Mat &s_x, Mat &s_y, const vector<Point2f>& r_coord, const vector<P
 					continue;
 				short gx = s_x.at<short>(cur_y, cur_x);
 				short gy = s_y.at<short>(cur_y, cur_x);
-				if (abs(gx) > 0 || abs(gy) > 0)
+				if (abs(gx) > 5 || abs(gy) > 5)
 				{
 					float grad_x = 0.0f, grad_y = 0.0f;
 					NormalGrad((int)gx, (int)gy, grad_x, grad_y);
@@ -121,7 +121,7 @@ void MatchShapeModel(const Mat &image, const vector<Point2f>& r_coord, const vec
 
 				int gx = 0, gy = 0;
 				ComputeGrad(image, cur_x, cur_y, gx, gy);
-				if (abs(gx) > 0 || abs(gy) > 0)
+				if (abs(gx) > 20 || abs(gy) > 20)
 				{
 					float grad_x = 0.0f, grad_y = 0.0f;
 					NormalGrad(gx, gy, grad_x, grad_y);
@@ -178,7 +178,7 @@ void FindShapeModel(Mat &srcImg, ShapeModel *model, vector<MatchRes> &MatchReses
 	const int pyr_n = model->pyrNum - 1;
 	vector<Mat> imgPry;
 	GetPyrImg(srcImg, imgPry, pyr_n + 1);
-	float angStep = model->angStep > 1 ? model->angStep : 1;
+	float angStep = model->angStep > 0.5 ? model->angStep : 0.5;
 	float angleStep_ = angStep * pow(2, pyr_n + 1);
 
 	int angNum = (model->endAng - model->startAng) / angleStep_ + 1;
@@ -187,10 +187,13 @@ void FindShapeModel(Mat &srcImg, ShapeModel *model, vector<MatchRes> &MatchReses
 	Sobel(imgPry[pyr_n], sobel_x, CV_16SC1, 1, 0, 3);
 	Sobel(imgPry[pyr_n], sobel_y, CV_16SC1, 0, 1, 3);
 	vector<vector<MatchRes>> mulMatchRes(angNum);
-#pragma omp parallel for
+
+	int thread_count = 2 * omp_get_max_threads() / 3;
+	thread_count = thread_count > angNum ? angNum : thread_count;
+#pragma omp parallel for num_threads(thread_count)
 	for (int i = 0; i < angNum; ++i)
 	{
-		vector<MatchRes> reses;
+		vector<MatchRes> reses(0);
 		float angle = model->startAng + i * angleStep_;
 		vector<Point2f> r_coord, r_grad;
 		RotateCoordGrad(model->models[pyr_n].coord, model->models[pyr_n].grad, r_coord, r_grad, angle);
@@ -202,11 +205,13 @@ void FindShapeModel(Mat &srcImg, ShapeModel *model, vector<MatchRes> &MatchReses
 	vector<MatchRes> resNMS;
 	ShapeNMS(mulMatchRes, resNMS, model->min_x, model->min_y, model->res_n);
 
-	Mat image0;
-	cvtColor(imgPry[pyr_n], image0, COLOR_GRAY2BGR);
-	DrawShapeRes(image0, model->models[pyr_n], resNMS);
+	//Mat image0;
+	//cvtColor(imgPry[pyr_n], image0, COLOR_GRAY2BGR);
+	//DrawShapeRes(image0, model->models[pyr_n], resNMS);
 
 	//其他层匹配
+	//计算分配的线程数
+	thread_count = thread_count > 5 ? 5 : thread_count;
 	vector<MatchRes> reses_(5);
 	for (int k = 0; k < resNMS.size(); ++k)
 	{
@@ -217,7 +222,7 @@ void FindShapeModel(Mat &srcImg, ShapeModel *model, vector<MatchRes> &MatchReses
 			angleStep_ = angStep * pow(2, i);
 			float minScore = model->minScore / (i + 1);
 			int center[4] = { 2 * resNMS[k].c_x - 10, 2 * resNMS[k].c_y - 10, 2 * resNMS[k].c_x + 10, 2 * resNMS[k].c_y + 10 };
-#pragma omp parallel for
+#pragma omp parallel for num_threads(thread_count)
 			for (int j = -2; j <= 2; ++j)
 			{
 				float angle = resNMS[k].angle + j * angleStep_;
@@ -244,25 +249,35 @@ void FindShapeModel(Mat &srcImg, ShapeModel *model, vector<MatchRes> &MatchReses
 
 void shape_match_test()
 {
-	string imgPath = "../image/model1.bmp";
+	string imgPath = "D:/data/定位测试图片/test5.jpg";
 	Mat modImg = imread(imgPath, 0);
+	cv::Rect rect(1265, 857, 203, 212);
+	Mat modeImg_ = modImg(rect).clone();
 	ShapeModel *model = new ShapeModel;
 
 	SPAPLEMODELINFO shapeModelInfo;
-	shapeModelInfo.pyrNumber = 4;
+	shapeModelInfo.pyrNumber = 5;
 	shapeModelInfo.lowVal = 100;
 	shapeModelInfo.highVal = 200;
 	shapeModelInfo.step = 3;
 
-	CreateShapeModel(modImg, model, shapeModelInfo);
+	CreateShapeModel(modeImg_, model, shapeModelInfo);
 	vector<MatchRes> v_MatchRes;
 
 	model->startAng = -180;
 	model->endAng = 180;
-	model->res_n = 3;
-	string testImgPath = "../image/f.bmp";
+	model->res_n = 9;
+	model->minScore = 0.5;
+
+	string testImgPath = "D:/data/定位测试图片/test5.jpg";
 	Mat testImg = imread(testImgPath, 0);
+	double el = cv::getTickCount();
 	FindShapeModel(testImg, model, v_MatchRes);
+	double e2 = cv::getTickCount();
+	double time = (e2 - el) / cv::getTickFrequency() * 1000;
+	cout << time << endl;
+	delete model;
+	model = nullptr;
 	//Mat testImg = imread("5.png", 0);
 
 	//MatchRes matchRes;

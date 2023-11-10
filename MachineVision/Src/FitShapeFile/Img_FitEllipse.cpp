@@ -187,6 +187,7 @@ void Img_TukeyEllipseWeights(NB_Array2D pts, Ellipse2D& ellipse, vector<double>&
 	sort(disttanceSort.begin(), disttanceSort.end());
 	double tao = disttanceSort[(disttanceSort.size() - 1) / 2] / 0.6745 * 2;
 
+	tao = std::max(tao, 1e-12);
 	//更新权重
 	for (int i = 0; i < dists.size(); ++i)
 	{
